@@ -1,0 +1,60 @@
+name: Security checks
+
+on:
+  pull_request:
+  push:
+    branches: [main, master]
+  schedule:
+    - cron: "23 5 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  secret-scan:
+    name: Procurar segredos no repositório
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  supabase-admin-key:
+    name: Bloquear chave administrativa do Supabase no navegador
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Verificar index.html e config.js
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import base64, json, re, sys
+          bad = False
+          for path in ("index.html", "config.js"):
+              try:
+                  txt = open(path, encoding="utf-8", errors="ignore").read()
+              except FileNotFoundError:
+                  continue
+              if "sb_secret_" in txt or "service_role" in txt:
+                  print(f"::error file={path}::Texto de chave administrativa (service_role/sb_secret_) encontrado")
+                  bad = True
+              for tok in re.findall(r"eyJ[\w-]+\.eyJ[\w-]+\.[\w-]+", txt):
+                  p = tok.split(".")[1]
+                  p += "=" * (-len(p) % 4)
+                  try:
+                      role = json.loads(base64.urlsafe_b64decode(p)).get("role")
+                  except Exception:
+                      continue
+                  if role == "service_role":
+                      print(f"::error file={path}::JWT com role service_role encontrado. Revogue/rotacione essa chave no Supabase.")
+                      bad = True
+          sys.exit(1 if bad else 0)
+          PY
