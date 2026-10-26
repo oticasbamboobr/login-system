@@ -15,5 +15,4 @@ jobs:
         run: |
           curl -fsS -o /dev/null \
             -H "apikey: $SUPABASE_KEY" \
-            -H "Authorization: Bearer $SUPABASE_KEY" \
             "https://dvgglikbahumgfjuzben.supabase.co/rest/v1/app_data?select=key&limit=1"
