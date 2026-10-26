@@ -12,4 +12,10 @@ jobs:
       - name: Ping Oticas Bamboo Brasil
         env:
           SUPABASE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR2Z2dsaWtiYWh1bWdmanV6YmVuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI1OTkxNDgsImV4cCI6MjEwODE3NTE0OH0.Ksmhm0-tEM7DEtCCFLt4dd0jwdSdstFi6Qxti_cydzg
-        run: curl -fsS -o /dev/null -H "apikey: $SUPABASE_KEY" -H "Authorization: Bearer $SUPABASE_KEY" "https://dvgglikbahumgfjuzben.supabase.co/rest/v1/app_data?select=key&limit=1"
+        run: |
+          STATUS=$(curl -sS -o /dev/null -w "%{http_code}" \
+            -H "apikey: $SUPABASE_KEY" \
+            -H "Authorization: Bearer $SUPABASE_KEY" \
+            "https://dvgglikbahumgfjuzben.supabase.co/rest/v1/app_data?select=key&limit=1")
+          echo "HTTP status: $STATUS"
+          test "$STATUS" = "200"
