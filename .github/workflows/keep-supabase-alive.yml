@@ -13,6 +13,11 @@ jobs:
         env:
           SUPABASE_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
+          if [ -z "$SUPABASE_KEY" ]; then
+            echo "Secret SUPABASE_ANON_KEY está vazio ou não existe em Repository secrets"
+            exit 1
+          fi
           curl -fsS -o /dev/null \
             -H "apikey: $SUPABASE_KEY" \
+            -H "Authorization: Bearer $SUPABASE_KEY" \
             "https://dvgglikbahumgfjuzben.supabase.co/rest/v1/app_data?select=key&limit=1"
